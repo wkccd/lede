@@ -78,6 +78,7 @@ jobs:
           make defconfig
           # 预编译Rockchip平台的Imagebuilder
           echo 'CONFIG_IB=y' >> .config
+          echo 'CONFIG_TARGET_ROOTFS_PARTSIZE=800' >> .config
           echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8=y' >> .config
           echo 'CONFIG_TARGET_rockchip=y' >> .config
           echo 'CONFIG_TARGET_rockchip_armv8=y' >> .config
