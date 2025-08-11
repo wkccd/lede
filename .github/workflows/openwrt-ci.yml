@@ -80,10 +80,11 @@ jobs:
           make defconfig
           echo 'CONFIG_IB=y' >> .config
           echo 'CONFIG_TARGET_ROOTFS_PARTSIZE=1024' >> .config
+          echo 'CONFIG_PACKAGE_luci-theme-argon=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-openclash=y' >> .config
-          #echo 'CONFIG_PACKAGE_luci-app-openlist=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-openlist=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-passwall=y' >> .config
-          #echo 'CONFIG_PACKAGE_luci-app-passwall2=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-passwall2=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-homeproxy=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-dufs=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-dockerman=y' >> .config
