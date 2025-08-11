@@ -8,8 +8,7 @@
 name: rockchip-CI
 
 on:
-  workflow_dispatch:      
-         
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,9 +18,9 @@ jobs:
   build_openwrt:
 
     name: Build OpenWrt Firmware
-
+    
     runs-on: ubuntu-22.04
-    #if: github.ref == 'refs/heads/rootfspartsize'
+    if: github.ref == 'refs/heads/rootfspartsize'
     steps:
       - name: Space cleanup and Initialization environment
         env:
@@ -41,6 +40,18 @@ jobs:
 
       - name: Checkout OpenWrt
         uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        run: |
+          echo "=== Before cleanup ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/local/lib/android
+          sudo apt-get clean
+          echo "=== After cleanup ==="
+          df -h
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -63,7 +74,58 @@ jobs:
           ./scripts/feeds install -a
 
       - name: Generate configuration file
-        run: make defconfig
+        run: |
+          make defconfig
+          # 预编译Rockchip平台的Imagebuilder
+          echo 'CONFIG_IB=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8=y' >> .config
+          echo 'CONFIG_TARGET_rockchip=y' >> .config
+          echo 'CONFIG_TARGET_rockchip_armv8=y' >> .config
+          echo 'CONFIG_TARGET_MULTI_PROFILE=y' >> .config
+          # 预编译机型
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ariaboard_photonicat=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ariaboard_photonicat2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_codinge_xiaobao-nas-v1=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ezpro_mrkaio-m68s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ezpro_mrkaio-m68s-plus=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_fastrhino_r66s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_fastrhino_r68s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_firefly_station-p2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopc-t4=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopc-t6=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-neo3=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r2c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r2c-plus=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r2s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r3s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r4s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r4se=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r5c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r5s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r6c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r6s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h28k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h29k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h66k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h68k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h69k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-ht2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_panther_x2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_radxa_e20c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_radxa_e25=y' >> .config
+          echo 'CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_friendlyarm_nanopi-r76s=y' >> .config
+          # 预装软件
+          echo 'CONFIG_PACKAGE_luci-theme-argon=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-openclash=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-openlist=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-passwall=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-passwall2=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-homeproxy=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-dufs=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-dockerman=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-ssr-plus=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-store=y' >> .config
+          make defconfig
 
       - name: Download packages
         run: make download -j16
