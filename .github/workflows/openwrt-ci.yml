@@ -43,6 +43,18 @@ jobs:
       - name: Checkout OpenWrt
         uses: actions/checkout@v4
 
+      - name: Free Disk Space
+        run: |
+          echo "=== Before cleanup ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/local/lib/android
+          sudo apt-get clean
+          echo "=== After cleanup ==="
+          df -h
+
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
@@ -69,12 +81,12 @@ jobs:
           echo 'CONFIG_IB=y' >> .config
           echo 'CONFIG_TARGET_ROOTFS_PARTSIZE=1024' >> .config
           echo 'CONFIG_PACKAGE_luci-app-openclash=y' >> .config
-          echo 'CONFIG_PACKAGE_luci-app-openlist=y' >> .config
+          #echo 'CONFIG_PACKAGE_luci-app-openlist=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-passwall=y' >> .config
-          echo 'CONFIG_PACKAGE_luci-app-passwall2=y' >> .config
+          #echo 'CONFIG_PACKAGE_luci-app-passwall2=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-homeproxy=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-dufs=y' >> .config
-          echo 'CONFIG_PACKAGE_luci-app-dockerman=y' >> .config
+          #echo 'CONFIG_PACKAGE_luci-app-dockerman=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-ssr-plus=y' >> .config
           make defconfig
 
