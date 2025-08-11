@@ -8,8 +8,6 @@
 name: OpenWrt-CI
 
 on:
-  schedule:
-    - cron: '0 20 * * *'  
   workflow_dispatch:      
          
 
@@ -23,7 +21,7 @@ jobs:
     name: Build OpenWrt Firmware
 
     runs-on: ubuntu-22.04
-    if: github.ref == 'refs/heads/rootfspartsize'
+    #if: github.ref == 'refs/heads/rootfspartsize'
     steps:
       - name: Space cleanup and Initialization environment
         env:
