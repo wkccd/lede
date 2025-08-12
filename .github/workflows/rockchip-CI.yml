@@ -1,10 +1,3 @@
-# 
-# <https://github.com/KFERMercer/OpenWrt-CI>
-#
-# Copyright (C) 2019 P3TERX
-#
-# Copyright (C) 2020 KFERMercer
-#
 name: rockchip-CI-devices
 
 on:
@@ -14,58 +7,45 @@ permissions:
   contents: read
 
 jobs:
-
   build_openwrt:
-
     name: Build OpenWrt Firmware
-    
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/rootfspartsize'
+
     steps:
-      - name: Space cleanup and Initialization environment
-        env:
-          DEBIAN_FRONTEND: noninteractive
+      - name: Maximize build space & set TMPDIR
         run: |
-          docker rmi `docker images -q`
-          sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d /usr/local/lib/android
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
-          sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* snap*
-          sudo -E apt -y full-upgrade
-          sudo -E apt -y install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk gcc-multilib g++-multilib gettext genisoimage git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev libtool llvm lrzsz msmtp ninja-build p7zip p7zip-full patch pkgconf python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
-          sudo -E systemctl daemon-reload
-          sudo -E apt -y autoremove --purge
-          sudo -E apt clean
-          sudo -E timedatectl set-timezone "Asia/Shanghai"
+          echo "=== Before cleanup ==="
+          df -h
+          # 删除大文件和无用目录
+          docker rmi $(docker images -q) || true
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/local/share/boost \
+                      /opt/hostedtoolcache /usr/local/share/az* /usr/local/lib/node_modules || true
+          sudo apt-get purge -y azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* \
+                               powershell* openjdk* mysql* php* mongodb* snap*
+          sudo apt-get autoremove -y --purge
+          sudo apt-get clean
+          # 把 /tmp 挪到空间更大的工作目录
+          export TMPDIR="$GITHUB_WORKSPACE/tmp"
+          mkdir -p "$TMPDIR"
+          echo "TMPDIR=$TMPDIR" >> $GITHUB_ENV
+          echo "=== After cleanup ==="
+          df -h
 
       - name: Checkout OpenWrt
         uses: actions/checkout@v4
 
-      - name: Free Disk Space
+      - name: Install build dependencies
         run: |
-          echo "=== Before cleanup ==="
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf /usr/local/lib/android
-          sudo apt-get clean
-          echo "=== After cleanup ==="
-          df -h
-
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
-          tool-cache: true
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: true
+          sudo apt-get update
+          sudo apt-get install -y ack antlr3 asciidoc autoconf automake autopoint binutils \
+              bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler flex \
+              gawk gcc-multilib g++-multilib gettext genisoimage git gperf haveged help2man intltool \
+              libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev \
+              libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev \
+              libtool llvm lrzsz msmtp ninja-build p7zip p7zip-full patch pkgconf python3 \
+              python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
+              swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
 
       - name: Update feeds
         run: |
@@ -76,12 +56,10 @@ jobs:
       - name: Generate configuration file
         run: |
           make defconfig
-          # 预编译Rockchip平台的Imagebuilder
           echo 'CONFIG_IB=y' >> .config
           echo 'CONFIG_USES_EXT4=n' >> .config
           echo 'CONFIG_TARGET_ROOTFS_EXT4FS=n' >> .config
-          echo 'CONFIG_TARGET_ROOTFS_PARTSIZE=800' >> .config
-          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8=y' >> .config
+          echo 'CONFIG_TARGET_ROOTFS_PARTSIZE=512' >> .config
           echo 'CONFIG_TARGET_rockchip=y' >> .config
           echo 'CONFIG_TARGET_rockchip_armv8=y' >> .config
           echo 'CONFIG_TARGET_MULTI_PROFILE=y' >> .config
@@ -125,30 +103,30 @@ jobs:
           echo 'CONFIG_PACKAGE_luci-app-passwall2=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-homeproxy=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-dufs=y' >> .config
-          echo 'CONFIG_PACKAGE_luci-app-dockerman=y' >> .config
+          #echo 'CONFIG_PACKAGE_luci-app-dockerman=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-ssr-plus=y' >> .config
           echo 'CONFIG_PACKAGE_luci-app-store=y' >> .config
           make defconfig
 
       - name: Download packages
-        run: make download -j16
+        run: make download -j$(nproc)
+
+      - name: Compile target/linux first (reduce peak space usage)
+        run: |
+          make target/linux/{clean,compile} -j$(nproc) || make -j1 V=s
+
+      - name: Compile packages
+        run: |
+          make package/{base-files,feeds} -j$(nproc) || make -j1 V=s
 
       - name: Compile firmware
         run: |
           make -j$(nproc) || make -j1 V=s
-          echo "======================="
-          echo "Space usage:"
-          echo "======================="
           df -h
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
 
       - name: Prepare artifact
         run: |
-          mkdir -p ./artifact/package
-          mkdir -p ./artifact/buildinfo
+          mkdir -p ./artifact/package ./artifact/buildinfo
           rm -rf $(find ./bin/targets/ -type d -name "packages")
           cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
