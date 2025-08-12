@@ -59,6 +59,7 @@ jobs:
           echo 'CONFIG_IB=y' >> .config
           echo 'CONFIG_USES_EXT4=n' >> .config
           echo 'CONFIG_TARGET_ROOTFS_EXT4FS=n' >> .config
+          echo 'CONFIG_TARGET_KERNEL_PARTSIZE=128' >> .config
           echo 'CONFIG_TARGET_ROOTFS_PARTSIZE=512' >> .config
           echo 'CONFIG_TARGET_rockchip=y' >> .config
           echo 'CONFIG_TARGET_rockchip_armv8=y' >> .config
@@ -110,14 +111,6 @@ jobs:
 
       - name: Download packages
         run: make download -j$(nproc)
-
-      - name: Compile target/linux first (reduce peak space usage)
-        run: |
-          make target/linux/{clean,compile} -j$(nproc) || make -j1 V=s
-
-      - name: Compile packages
-        run: |
-          make package/{base-files,feeds} -j$(nproc) || make -j1 V=s
 
       - name: Compile firmware
         run: |
