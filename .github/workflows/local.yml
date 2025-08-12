@@ -1,0 +1,131 @@
+name: rockchip-local-CI-devices
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build_local_openwrt:
+    name: Build OpenWrt Firmware
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/rootfspartsize'
+
+    steps:
+      - name: Checkout OpenWrt
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ack antlr3 asciidoc autoconf automake autopoint binutils \
+              bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler flex \
+              gawk gcc-multilib g++-multilib gettext genisoimage git gperf haveged help2man intltool \
+              libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev \
+              libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev \
+              libtool llvm lrzsz msmtp ninja-build p7zip p7zip-full patch pkgconf python3 \
+              python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
+              swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+
+      - name: Update feeds
+        run: |
+          sed -i 's/#src-git helloworld/src-git helloworld/g' ./feeds.conf.default
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Generate configuration file
+        run: |
+          make defconfig
+          echo 'CONFIG_IB=y' >> .config
+          echo 'CONFIG_USES_EXT4=n' >> .config
+          echo 'CONFIG_TARGET_ROOTFS_EXT4FS=n' >> .config
+          echo 'CONFIG_TARGET_ROOTFS_PARTSIZE=512' >> .config
+          echo 'CONFIG_TARGET_rockchip=y' >> .config
+          echo 'CONFIG_TARGET_rockchip_armv8=y' >> .config
+          echo 'CONFIG_TARGET_MULTI_PROFILE=y' >> .config
+          # 预编译机型
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ariaboard_photonicat=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ariaboard_photonicat2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_codinge_xiaobao-nas-v1=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ezpro_mrkaio-m68s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_ezpro_mrkaio-m68s-plus=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_fastrhino_r66s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_fastrhino_r68s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_firefly_station-p2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopc-t4=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopc-t6=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-neo3=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r2c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r2c-plus=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r2s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r3s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r4s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r4se=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r5c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r5s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r6c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r6s=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h28k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h29k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h66k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h68k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-h69k=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_hinlink_opc-ht2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_panther_x2=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_radxa_e20c=y' >> .config
+          echo 'CONFIG_DEFAULT_TARGET_rockchip_armv8_DEVICE_radxa_e25=y' >> .config
+          echo 'CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_friendlyarm_nanopi-r76s=y' >> .config
+          # 预装软件
+          echo 'CONFIG_PACKAGE_luci-theme-argon=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-openclash=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-openlist=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-passwall=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-passwall2=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-homeproxy=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-dufs=y' >> .config
+          #echo 'CONFIG_PACKAGE_luci-app-dockerman=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-ssr-plus=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-store=y' >> .config
+          make defconfig
+
+      - name: Download packages
+        run: make download -j$(nproc)
+
+      - name: Compile target/linux first (reduce peak space usage)
+        run: |
+          make target/linux/{clean,compile} -j$(nproc) || make -j1 V=s
+
+      - name: Compile packages
+        run: |
+          make package/{base-files,feeds} -j$(nproc) || make -j1 V=s
+
+      - name: Compile firmware
+        run: |
+          make -j$(nproc) || make -j1 V=s
+          df -h
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p ./artifact/package ./artifact/buildinfo
+          rm -rf $(find ./bin/targets/ -type d -name "packages")
+          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
+          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
+
+      - name: Upload buildinfo
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt_buildinfo
+          path: ./artifact/buildinfo/
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt_package
+          path: ./artifact/package/
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt_firmware
+          path: ./bin/targets/
