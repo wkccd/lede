@@ -93,14 +93,6 @@ jobs:
       - name: Download packages
         run: make download -j$(nproc)
 
-      - name: Compile target/linux first (reduce peak space usage)
-        run: |
-          make target/linux/{clean,compile} -j$(nproc) || make -j1 V=s
-
-      - name: Compile packages
-        run: |
-          make package/{base-files,feeds} -j$(nproc) || make -j1 V=s
-
       - name: Compile firmware
         run: |
           make -j$(nproc) || make -j1 V=s
